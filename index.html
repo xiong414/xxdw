@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -28,5 +28,149 @@
         <p>&copy; 2025 熊熊大王</p>
     </footer>
     <script src="script.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>爱心粒子约束动画</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            cursor: move;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 设置画布尺寸
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // 粒子配置
+        const particles = [];
+        const particleCount = 800;
+        const colors = ['#FFB3DE', '#FF8CC6', '#FF66B2', '#FF3399', '#FF007F'];
+        const scale = 105; // 爱心缩放系数
+
+        // 爱心边界检测函数
+        function isInsideHeart(x, y) {
+            const dx = (x - canvas.width/2) / scale;
+            const dy = -(y - canvas.height/2) / scale;
+            return Math.pow(dx*dx + dy*dy - 1, 3) < dx*dx * dy*dy*dy;
+        }
+
+        // 粒子类
+        class Particle {
+    constructor() {
+        this.reset(true);
+        this.angle = Math.random() * Math.PI * 2;
+    }
+
+    reset() {
+        // 初始化位置在爱心范围内
+        do {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+        } while (!isInsideHeart(this.x, this.y));
+        
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.radius = Math.random() * 2 + 1;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    update(mouse) {
+        // 添加随机布朗运动
+        this.vx += (Math.random() - 0.5) * 0.01;
+        this.vy += (Math.random() - 0.5) * 0.01;
+        
+        // 速度限制
+        const speedLimit = 0.3;
+        this.vx = Math.max(-speedLimit, Math.min(speedLimit, this.vx));
+        this.vy = Math.max(-speedLimit, Math.min(speedLimit, this.vy));
+
+        // 临时位置计算
+        const newX = this.x + this.vx;
+        const newY = this.y + this.vy;
+
+        // 如果临时位置在爱心范围内，更新粒子位置
+        if (isInsideHeart(newX, newY)) {
+            this.x = newX;
+            this.y = newY;
+        } else {
+            // 如果超出了爱心边界，粒子反弹并减速
+            this.vx *= -0.5;
+            this.vy *= -0.5;
+        }
+
+        // 鼠标互动，确保粒子依然在爱心范围内
+        const dx = this.x - mouse.x;
+        const dy = this.y - mouse.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 80) {
+            const force = (80 - distance) / 80;
+            let newX = this.x + dx / distance * force * 1;
+            let newY = this.y + dy / distance * force * 1;
+
+            // 确保粒子不会突破爱心边界
+            if (isInsideHeart(newX, newY)) {
+                this.x = newX;
+                this.y = newY;
+            }
+        }
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+    }
+}
+
+        // 鼠标坐标
+        const mouse = { x: Infinity, y: Infinity };
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // 初始化粒子
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        // 动画循环
+        function animate() {
+            ctx.fillStyle = 'rgba(26, 26, 26, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(particle => {
+                particle.update(mouse);
+                particle.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
 </body>
 </html>
